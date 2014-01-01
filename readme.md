@@ -19,11 +19,11 @@ For simple modules we can create a class, e.g.
 A corresponding set of values to configure it:
 
 <pre><code>
-<appSettings>
+ &lt;appSettings&gt;
     &lt;add key="TestConfig.MyString" value="hello world" /&gt;
     &lt;add key="TestConfig.MyInt" value="123" /&gt;
     &lt;add key="TestConfig.MyDate" value="2013 12 08" /&gt;
-</appSettings>
+ &lt;/appSettings&gt;
 </code></pre>
 
 By convention the class name and property names must match.
