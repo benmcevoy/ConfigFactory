@@ -5,8 +5,18 @@ namespace ConfigReader
 {
     public class ConfigFactory
     {
-        private readonly IConfigReader _configReader = new AppSettingsConfigReader();
+        private IConfigReader _configReader;
         private readonly Dictionary<Type, object> _cache = new Dictionary<Type, object>(8);
+
+        public ConfigFactory() 
+            : this(new AppSettingsConfigReader())
+        {
+        }
+
+        public ConfigFactory(IConfigReader configReader)
+        {
+            _configReader = configReader;
+        }
 
         public T Create<T>() where T : class, new()
         {
@@ -19,6 +29,11 @@ namespace ConfigReader
             _cache[key] = value;
 
             return value;
+        }
+
+        public void SetConfigReader(IConfigReader configReader)
+        {
+            _configReader = configReader;
         }
 
         public static ConfigFactory Instance = new ConfigFactory();

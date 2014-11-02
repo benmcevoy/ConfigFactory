@@ -12,7 +12,7 @@ namespace ConfigReader
         public T Read<T>() where T : class, new()
         {
             var @type = typeof(T);
-            var name = @type.Name;
+            var name = @type.FullName;
             var result = new T();
 
             foreach (var property in @type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
