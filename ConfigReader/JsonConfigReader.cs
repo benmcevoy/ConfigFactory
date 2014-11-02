@@ -9,7 +9,7 @@ namespace ConfigReader
         private static readonly JavaScriptSerializer Serializer = new JavaScriptSerializer();
 
         public JsonConfigReader()
-            : this("")
+            : this(null)
         {
         }
 
@@ -24,14 +24,24 @@ namespace ConfigReader
             var name = @type.FullName;
             var result = new T();
 
-            try
+            var path = GetPath(name);
+
+            if (File.Exists(path))
             {
-                var file = File.ReadAllText(Path.Combine(_basePath, name + ".json"));
+                var file = File.ReadAllText(path);
                 result = Serializer.Deserialize<T>(file);
             }
-            catch { }
 
             return result;
+        }
+
+        private string GetPath(string name)
+        {
+            var fileName = name + ".json";
+
+            return string.IsNullOrWhiteSpace(_basePath)
+                ? fileName
+                : Path.Combine(_basePath, fileName);
         }
     }
 }
