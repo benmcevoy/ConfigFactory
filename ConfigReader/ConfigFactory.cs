@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ConfigReader
 {
@@ -29,6 +30,32 @@ namespace ConfigReader
             _cache[key] = value;
 
             return value;
+        }
+
+        /// <summary>
+        /// The Scan method will look for any classes in the AppDomain that implement IConfig
+        /// and hydrate them.
+        /// </summary>
+        public IEnumerable<object> Scan()
+        {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            var configs = typeof(IConfig);
+
+            var types = assemblies
+                .SelectMany(assembly => assembly.GetLoadableTypes())
+                .Where(t => configs.IsAssignableFrom(t) && t.IsClass)
+                .ToList();
+
+            if (!types.Any()) yield break;
+
+            var factoryMethod = typeof(ConfigFactory).GetMethod("Create");
+
+            foreach (var type in types)
+            {
+                var genericMethod = factoryMethod.MakeGenericMethod(new[] { type });
+                yield return genericMethod.Invoke(Instance, null);
+            }
         }
 
         public static ConfigFactory Instance = new ConfigFactory();
