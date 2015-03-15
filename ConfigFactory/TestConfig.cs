@@ -6,14 +6,8 @@ namespace ConfigFactory
     public class TestConfig
     {
         private decimal _myDecimal = 123.45m;
-        private string _myString = "a default value";
+        public string MyString = "a default value";
         private string _myOtherString = "a default value";
-
-        public string MyString
-        {
-            get { return _myString; }
-            set { _myString = value; }
-        }
 
         public string MyOtherString
         {

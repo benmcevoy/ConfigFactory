@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Linq;
-using System.Reflection;
+﻿using ConfigReader.ValueProviders;
 
-namespace ConfigReader
+namespace ConfigReader.ConfigReaders
 {
     public class AppSettingsConfigReader : IConfigReader
     {
@@ -13,7 +8,7 @@ namespace ConfigReader
 
         public AppSettingsConfigReader()
         {
-            _configReader = new ConfigReader(new AppSettingsSettingProvider());
+            _configReader = new ConfigReader(new AppSettingsValueProvider());
         }
 
         public T Read<T>() where T : class, new()

@@ -3,14 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using ConfigReader.ValueProviders;
 
-namespace ConfigReader
+namespace ConfigReader.ConfigReaders
 {
     public class ConfigReader : IConfigReader
     {
-        private readonly ISettingProvider _settingProvider;
+        private readonly IValueProvider _settingProvider;
 
-        public ConfigReader(ISettingProvider settingProvider)
+        public ConfigReader(IValueProvider settingProvider)
         {
             _settingProvider = settingProvider;
         }
@@ -21,11 +22,46 @@ namespace ConfigReader
             var name = @type.FullName;
             var result = new T();
 
-            foreach (var property in @type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (var field in @type.GetFields(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (field.IsInitOnly) continue;
+
+                // the key is the full namespace+type name and property
+                var key = string.Format("{0}.{1}", name, field.Name);
+                var fieldType = field.FieldType;
+
+                if (fieldType.IsArray())
+                {
+                    var argumentType = fieldType.GetElementType();
+                    var collection = GetArray(key, argumentType);
+
+                    field.SetValue(result, collection);
+                    continue;
+                }
+
+                if (fieldType.IsEnumerableOfT())
+                {
+                    var argumentType = fieldType.GetGenericArguments().First();
+                    var collection = GetList(key, argumentType);
+
+                    field.SetValue(result, collection);
+                    continue;
+                }
+
+                var value = _settingProvider.Get(key);
+
+                if (string.IsNullOrEmpty(value)) continue;
+
+                var safeValue = ConvertValue(fieldType, value);
+
+                field.SetValue(result, safeValue);
+            }
+
+            foreach (var property in @type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
             {
                 if (property.GetSetMethod() == null) continue;
 
-                // the key is the full namesspace type name and property
+                // the key is the full namespace+type name and property
                 var key = string.Format("{0}.{1}", name, property.Name);
                 var propertyType = property.PropertyType;
 
@@ -51,7 +87,7 @@ namespace ConfigReader
 
                 if (string.IsNullOrEmpty(value)) continue;
 
-                var safeValue = GetValue(propertyType, value);
+                var safeValue = ConvertValue(propertyType, value);
 
                 property.SetValue(result, safeValue, null);
             }
@@ -59,7 +95,7 @@ namespace ConfigReader
             return result;
         }
 
-        private static object GetValue(Type propertyType, string value)
+        private static object ConvertValue(Type propertyType, string value)
         {
             switch (propertyType.Name)
             {
@@ -84,7 +120,7 @@ namespace ConfigReader
 
                 if (string.IsNullOrEmpty(value)) break;
 
-                collection.Add(GetValue(propertyType, value));
+                collection.Add(ConvertValue(propertyType, value));
 
                 index++;
             }
@@ -105,10 +141,11 @@ namespace ConfigReader
 
                 if (string.IsNullOrEmpty(value)) break;
 
-                collection.Add(GetValue(propertyType, value));
+                collection.Add(ConvertValue(propertyType, value));
 
                 index++;
             }
+
             return collection;
         }
     }

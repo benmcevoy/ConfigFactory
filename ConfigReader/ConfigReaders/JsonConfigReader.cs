@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Web.Script.Serialization;
 
-namespace ConfigReader
+namespace ConfigReader.ConfigReaders
 {
     public class JsonConfigReader : IConfigReader
     {

@@ -38,14 +38,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AppSettingsConfigReader.cs" />
-    <Compile Include="AppSettingsSettingProvider.cs" />
+    <Compile Include="ConfigReaders\AppSettingsConfigReader.cs" />
+    <Compile Include="ValueProviders\AppSettingsValueProvider.cs" />
+    <Compile Include="ConfigAttribute.cs" />
     <Compile Include="ConfigFactory.cs" />
-    <Compile Include="ConfigReader.cs" />
+    <Compile Include="ConfigReaders\ConfigReader.cs" />
     <Compile Include="IConfig.cs" />
-    <Compile Include="IConfigReader.cs" />
-    <Compile Include="ISettingProvider.cs" />
-    <Compile Include="JsonConfigReader.cs" />
+    <Compile Include="IConfigFactory.cs" />
+    <Compile Include="ConfigReaders\IConfigReader.cs" />
+    <Compile Include="ValueProviders\IValueProvider.cs" />
+    <Compile Include="ConfigReaders\JsonConfigReader.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TypeExtensions.cs" />
   </ItemGroup>

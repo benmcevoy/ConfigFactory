@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using ConfigReader.ConfigReaders;
 
 namespace ConfigReader
 {
-    public class ConfigFactory
+    public class ConfigFactory : IConfigFactory
     {
         private readonly IConfigReader _configReader;
         private readonly Dictionary<Type, object> _cache = new Dictionary<Type, object>(8);
@@ -19,7 +21,7 @@ namespace ConfigReader
             _configReader = configReader;
         }
 
-        public T Create<T>() where T : class, new()
+        public T Resolve<T>() where T : class, new()
         {
             var key = typeof(T);
 
@@ -38,13 +40,18 @@ namespace ConfigReader
         /// </summary>
         public IEnumerable<object> Scan()
         {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            return Scan(AppDomain.CurrentDomain.GetAssemblies());
+        }
 
-            var configs = typeof(IConfig);
-
-            var types = assemblies
-                .SelectMany(assembly => assembly.GetLoadableTypes())
-                .Where(t => configs.IsAssignableFrom(t) && t.IsClass)
+        /// <summary>
+        /// The Scan method will look for any classes in the the set of assemblies that implement IConfig
+        /// and hydrate them.
+        /// </summary>
+        public IEnumerable<object> Scan(IEnumerable<Assembly> assemblies)
+        {
+            var enumeratedAssemblies = assemblies as Assembly[] ?? assemblies.ToArray();
+            var types = InterfaceScan(enumeratedAssemblies)
+                .Union(AttributeScan(enumeratedAssemblies))
                 .ToList();
 
             if (!types.Any()) yield break;
@@ -58,6 +65,35 @@ namespace ConfigReader
             }
         }
 
-        public static ConfigFactory Instance = new ConfigFactory();
+        public IEnumerable<KeyValuePair<Type, object>> GetAllRegistrations()
+        {
+            return _cache;
+        }
+
+        private static IEnumerable<Type> InterfaceScan(IEnumerable<Assembly> assemblies)
+        {
+            var configInterface = typeof(IConfig);
+
+            var types = assemblies
+                .SelectMany(assembly => assembly.GetLoadableTypes())
+                .Where(t => configInterface.IsAssignableFrom(t) && t.IsClass)
+                .ToList();
+
+            return types;
+        }
+
+        private static IEnumerable<Type> AttributeScan(IEnumerable<Assembly> assemblies)
+        {
+            var configAttribute = typeof (ConfigAttribute);
+
+            var types = assemblies
+                .SelectMany(assembly => assembly.GetLoadableTypes())
+                .Where(t => t.GetCustomAttributes(configAttribute, false).Any() && t.IsClass)
+                .ToList();
+
+            return types;
+        }
+
+        public static IConfigFactory Instance = new ConfigFactory();
     }
 }

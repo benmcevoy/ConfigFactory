@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Data.SqlTypes;
+using System.Reflection;
 using ConfigReader;
+
 
 namespace ConfigFactory
 {
@@ -8,18 +9,73 @@ namespace ConfigFactory
     {
         static void Main(string[] args)
         {
-            var test = ConfigReader.ConfigFactory.Instance.Create<TestConfig>();
+            var test = ConfigReader.ConfigFactory.Instance.Resolve<TestConfig>();
 
-            var test1 = ConfigReader.ConfigFactory.Instance.Create<TestConfig>();
+            var test1 = ConfigReader.ConfigFactory.Instance.Resolve<TestConfig>();
 
-            var factory = new ConfigReader.ConfigFactory(new JsonConfigReader());
+            //var factory = new ConfigReader.ConfigFactory(new JsonConfigReader());
+            //var factory = ConfigReader.ConfigFactory.Instance;
 
-            var test2 = factory.Create<TestConfig>();
+            var factory = ConfigReader.ConfigFactory.Instance;
+
+            factory.Scan();
+
+            var test2 = factory.Resolve<TestConfig>();
+            var test3 = factory.Resolve<TestFieldConfig>();
+            var test4 = factory.Resolve<TestAttributeConfig>();
+
+
+            foreach (var value in test2.MyCollection)
+            {
+                Console.WriteLine("MyCollection: {0}", value);
+            }
 
             Console.WriteLine(test2.MyString);
             Console.WriteLine(test2.MyOtherString);
+
+            Console.WriteLine(test3.MyString);
+            Console.WriteLine(test3.MyOtherString);
+
+            Console.WriteLine(test4.MyString);
+            Console.WriteLine(test4.MyOtherString);
+            Console.WriteLine(test4.MyDecimal);
+
+            Console.WriteLine();
+
+            Compare<TestAttributeConfig>(factory);
+
+
             Console.ReadKey();
 
         }
+
+        private static void Compare<T>(IConfigFactory factory)
+            where T: class, new()
+        {
+            Console.WriteLine("-------------------------");
+
+
+            var defaultInstance = new T();
+            var hydratedInstance = factory.Resolve<T>();
+
+            Console.WriteLine(typeof (T).FullName);
+            Console.WriteLine("properties");
+            Console.WriteLine("-------------------------");
+
+            foreach (var propertyInfo in typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            {
+                Console.WriteLine("{0}: {1}\t{2}", propertyInfo.Name, propertyInfo.GetValue(defaultInstance), propertyInfo.GetValue(hydratedInstance));
+            }
+
+            Console.WriteLine("fields");
+            Console.WriteLine("-------------------------");
+            foreach (var propertyInfo in typeof(T).GetFields(BindingFlags.Instance | BindingFlags.Public))
+            {
+                Console.WriteLine("{0}: {1}\t{2}", propertyInfo.Name, propertyInfo.GetValue(defaultInstance), propertyInfo.GetValue(hydratedInstance));
+            }
+        }
     }
 }
+
+
+

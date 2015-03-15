@@ -1,4 +1,4 @@
-﻿namespace ConfigReader
+﻿namespace ConfigReader.ConfigReaders
 {
     public interface IConfigReader
     {
