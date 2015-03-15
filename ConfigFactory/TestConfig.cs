@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using ConfigReader;
 
 namespace ConfigFactory
 {
+    [Config]
     public class TestConfig
     {
         private decimal _myDecimal = 123.45m;

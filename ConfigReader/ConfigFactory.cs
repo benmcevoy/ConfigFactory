@@ -34,34 +34,27 @@ namespace ConfigReader
             return value;
         }
 
-        /// <summary>
-        /// The Scan method will look for any classes in the AppDomain that implement IConfig
-        /// and hydrate them.
-        /// </summary>
-        public IEnumerable<object> Scan()
+        public void Register()
         {
-            return Scan(AppDomain.CurrentDomain.GetAssemblies());
+            Register(AppDomain.CurrentDomain.GetAssemblies());
         }
 
-        /// <summary>
-        /// The Scan method will look for any classes in the the set of assemblies that implement IConfig
-        /// and hydrate them.
-        /// </summary>
-        public IEnumerable<object> Scan(IEnumerable<Assembly> assemblies)
+        public void Register(IEnumerable<Assembly> assemblies)
         {
             var enumeratedAssemblies = assemblies as Assembly[] ?? assemblies.ToArray();
             var types = InterfaceScan(enumeratedAssemblies)
                 .Union(AttributeScan(enumeratedAssemblies))
                 .ToList();
 
-            if (!types.Any()) yield break;
+            if (!types.Any()) return;
 
-            var factoryMethod = typeof(ConfigFactory).GetMethod("Create");
+            var factoryMethod = typeof(ConfigFactory).GetMethod("Resolve");
 
             foreach (var type in types)
             {
                 var genericMethod = factoryMethod.MakeGenericMethod(new[] { type });
-                yield return genericMethod.Invoke(Instance, null);
+                // Call resolve to hydrate this instance
+                genericMethod.Invoke(Instance, null);
             }
         }
 

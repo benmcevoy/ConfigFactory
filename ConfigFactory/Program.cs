@@ -18,7 +18,14 @@ namespace ConfigFactory
 
             var factory = ConfigReader.ConfigFactory.Instance;
 
-            factory.Scan();
+            factory.Register();
+
+            var registrations = factory.GetAllRegistrations();
+
+            foreach (var registration in registrations)
+            {
+                Console.WriteLine(registration.Key.FullName);
+            }
 
             var test2 = factory.Resolve<TestConfig>();
             var test3 = factory.Resolve<TestFieldConfig>();
@@ -50,7 +57,7 @@ namespace ConfigFactory
         }
 
         private static void Compare<T>(IConfigFactory factory)
-            where T: class, new()
+            where T : class, new()
         {
             Console.WriteLine("-------------------------");
 
@@ -58,7 +65,7 @@ namespace ConfigFactory
             var defaultInstance = new T();
             var hydratedInstance = factory.Resolve<T>();
 
-            Console.WriteLine(typeof (T).FullName);
+            Console.WriteLine(typeof(T).FullName);
             Console.WriteLine("properties");
             Console.WriteLine("-------------------------");
 
