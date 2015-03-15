@@ -39,6 +39,7 @@ namespace ConfigFactory
 
             Console.WriteLine(test2.MyString);
             Console.WriteLine(test2.MyOtherString);
+            Console.WriteLine(test2.MyDate);
 
             Console.WriteLine(test3.MyString);
             Console.WriteLine(test3.MyOtherString);
@@ -83,6 +84,3 @@ namespace ConfigFactory
         }
     }
 }
-
-
-
