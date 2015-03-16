@@ -1,4 +1,5 @@
-﻿using ConfigReader.ValueProviders;
+﻿using System;
+using ConfigReader.ValueProviders;
 
 namespace ConfigReader.ConfigReaders
 {
@@ -14,6 +15,11 @@ namespace ConfigReader.ConfigReaders
         public T Read<T>() where T : class, new()
         {
             return _configReader.Read<T>();
+        }
+
+        public object Read(Type type)
+        {
+            return _configReader.Read(type);
         }
     }
 }

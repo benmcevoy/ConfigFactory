@@ -11,7 +11,7 @@ namespace ConfigReader
         private readonly IConfigReader _configReader;
         private readonly Dictionary<Type, object> _cache = new Dictionary<Type, object>(8);
 
-        public ConfigFactory() 
+        public ConfigFactory()
             : this(new AppSettingsConfigReader())
         {
         }
@@ -23,15 +23,20 @@ namespace ConfigReader
 
         public T Resolve<T>() where T : class, new()
         {
-            var key = typeof(T);
+            return (T)Resolve(typeof(T));
+        }
 
-            if (_cache.ContainsKey(key)) return (T)_cache[key];
+        public object Resolve(Type type)
+        {
+            var key = type;
 
-            var value = _configReader.Read<T>();
+            if (_cache.ContainsKey(key)) return Convert.ChangeType(_cache[key], type);
+
+            var value = _configReader.Read(type);
 
             _cache[key] = value;
 
-            return value;
+            return Convert.ChangeType(_cache[key], type);
         }
 
         public void Register()
@@ -41,26 +46,39 @@ namespace ConfigReader
 
         public void Register(IEnumerable<Assembly> assemblies)
         {
-            var enumeratedAssemblies = assemblies as Assembly[] ?? assemblies.ToArray();
-            var types = InterfaceScan(enumeratedAssemblies)
-                .Union(AttributeScan(enumeratedAssemblies))
-                .ToList();
+            var types = Scan(assemblies).ToList();
 
             if (!types.Any()) return;
 
-            var factoryMethod = typeof(ConfigFactory).GetMethod("Resolve");
+            Register(types);
+        }
 
+        public void Register(IEnumerable<Type> types)
+        {
             foreach (var type in types)
             {
-                var genericMethod = factoryMethod.MakeGenericMethod(new[] { type });
-                // Call resolve to hydrate this instance
-                genericMethod.Invoke(Instance, null);
+                Resolve(type);
             }
         }
 
         public IEnumerable<KeyValuePair<Type, object>> GetAllRegistrations()
         {
             return _cache;
+        }
+
+        public IEnumerable<Type> Scan()
+        {
+            return Scan(AppDomain.CurrentDomain.GetAssemblies());
+        }
+
+        public IEnumerable<Type> Scan(IEnumerable<Assembly> assemblies)
+        {
+            var enumeratedAssemblies = assemblies as Assembly[] ?? assemblies.ToArray();
+            var types = InterfaceScan(enumeratedAssemblies)
+                .Union(AttributeScan(enumeratedAssemblies))
+                .ToList();
+
+            return types;
         }
 
         private static IEnumerable<Type> InterfaceScan(IEnumerable<Assembly> assemblies)
@@ -77,7 +95,7 @@ namespace ConfigReader
 
         private static IEnumerable<Type> AttributeScan(IEnumerable<Assembly> assemblies)
         {
-            var configAttribute = typeof (ConfigAttribute);
+            var configAttribute = typeof(ConfigAttribute);
 
             var types = assemblies
                 .SelectMany(assembly => assembly.GetLoadableTypes())

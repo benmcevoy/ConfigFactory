@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Web.Script.Serialization;
 
 namespace ConfigReader.ConfigReaders
@@ -20,16 +21,20 @@ namespace ConfigReader.ConfigReaders
 
         public T Read<T>() where T : class, new()
         {
-            var @type = typeof(T);
+            return (T)Read(typeof(T));
+        }
+
+        public object Read(Type type)
+        {
             var name = @type.FullName;
-            var result = new T();
+            var result = Activator.CreateInstance(type);
 
             var path = GetPath(name);
 
             if (File.Exists(path))
             {
                 var file = File.ReadAllText(path);
-                result = Serializer.Deserialize<T>(file);
+                result = Serializer.Deserialize(file, type);
             }
 
             return result;

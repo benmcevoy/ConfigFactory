@@ -18,9 +18,13 @@ namespace ConfigReader.ConfigReaders
 
         public T Read<T>() where T : class, new()
         {
-            var @type = typeof(T);
-            var name = @type.FullName;
-            var result = new T();
+            return (T)Read(typeof(T));
+        }
+
+        public object Read(Type type)
+        {
+            var name = type.FullName;
+            var result = Activator.CreateInstance(type);
 
             foreach (var field in @type.GetFields(BindingFlags.Instance | BindingFlags.Public))
             {
@@ -57,7 +61,7 @@ namespace ConfigReader.ConfigReaders
                 field.SetValue(result, safeValue);
             }
 
-            foreach (var property in @type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
             {
                 if (property.GetSetMethod() == null) continue;
 
