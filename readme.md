@@ -33,9 +33,9 @@ A corresponding set of values to configure it:
 
 <pre><code>
  &lt;appSettings&gt;
-    &lt;add key="TestConfig.MyString" value="hello world" /&gt;
-    &lt;add key="TestConfig.MyInt" value="456" /&gt;
-    &lt;add key="TestConfig.MyDate" value="2013-12-08T13:55" /&gt;
+    &lt;add key="MyNameSpace.TestConfig.MyString" value="hello world" /&gt;
+    &lt;add key="MyNameSpace.TestConfig.MyInt" value="456" /&gt;
+    &lt;add key="MyNameSpace.TestConfig.MyDate" value="2013-12-08T13:55" /&gt;
  &lt;/appSettings&gt;
 </code></pre>
 
@@ -44,9 +44,9 @@ By convention the class name and property names must match.
 Collections of values, e.g. arrays, can be given by using a zero based index.
 
 <pre><code>
-    &lt;add key="TestConfig.MyCollection0" value="hello world1" /&gt;
-    &lt;add key="TestConfig.MyCollection1" value="hello world2" /&gt;
-    &lt;add key="TestConfig.MyCollection2" value="hello world3" /&gt;
+    &lt;add key="MyNameSpace.TestConfig.MyCollection0" value="hello world1" /&gt;
+    &lt;add key="MyNameSpace.TestConfig.MyCollection1" value="hello world2" /&gt;
+    &lt;add key="MyNameSpace.TestConfig.MyCollection2" value="hello world3" /&gt;
 </code></pre>
 
 An instance of the config class can be created and prehaps used as part of DI setup.
