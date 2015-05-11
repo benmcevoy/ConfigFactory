@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using ConfigReader.ValueProviders;
@@ -23,77 +24,62 @@ namespace ConfigReader.ConfigReaders
 
         public object Read(Type type)
         {
-            var name = type.FullName;
+            var typeFullName = type.FullName;
             var result = Activator.CreateInstance(type);
 
-            foreach (var field in @type.GetFields(BindingFlags.Instance | BindingFlags.Public))
+            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public)
+                .Where(info => !info.IsInitOnly)
+                .Select(info => new MemberInfo { Name = info.Name, MemberType = info.FieldType, IsField = true, FieldInfo = info, TypeFullName = typeFullName });
+
+            var properties =
+                type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                    .Where(info => info.GetSetMethod() != null)
+                    .Select(info => new MemberInfo { Name = info.Name, MemberType = info.PropertyType, PropertyInfo = info, TypeFullName = typeFullName });
+
+            var members = fields.Union(properties);
+
+            // try and set fields
+            foreach (var member in members)
             {
-                if (field.IsInitOnly) continue;
-
                 // the key is the full namespace+type name and property
-                var key = string.Format("{0}.{1}", name, field.Name);
-                var fieldType = field.FieldType;
+                var fieldName = member.Name;
+                var fieldType = member.MemberType;
 
+                // try array
                 if (fieldType.IsArray())
                 {
                     var argumentType = fieldType.GetElementType();
-                    var collection = GetArray(key, argumentType);
+                    var collection = GetArray(typeFullName, fieldName, argumentType);
 
-                    field.SetValue(result, collection);
+                    SetMemberValue(member, result, collection);
+
                     continue;
                 }
 
+                // try enumerable
                 if (fieldType.IsEnumerableOfT())
                 {
                     var argumentType = fieldType.GetGenericArguments().First();
-                    var collection = GetList(key, argumentType);
+                    var collection = GetList(typeFullName, fieldName, argumentType);
 
-                    field.SetValue(result, collection);
+                    SetMemberValue(member, result, collection);
+
                     continue;
                 }
 
-                var value = _settingProvider.Get(key);
+                // try a literal value
+                var value = _settingProvider.Get(FullKey(typeFullName, fieldName));
+
+                if (string.IsNullOrEmpty(value))
+                {
+                    value = _settingProvider.Get(fieldName);
+                }
 
                 if (string.IsNullOrEmpty(value)) continue;
 
                 var safeValue = ConvertValue(fieldType, value);
 
-                field.SetValue(result, safeValue);
-            }
-
-            foreach (var property in type.GetProperties(BindingFlags.Instance | BindingFlags.Public))
-            {
-                if (property.GetSetMethod() == null) continue;
-
-                // the key is the full namespace+type name and property
-                var key = string.Format("{0}.{1}", name, property.Name);
-                var propertyType = property.PropertyType;
-
-                if (propertyType.IsArray())
-                {
-                    var argumentType = propertyType.GetElementType();
-                    var collection = GetArray(key, argumentType);
-
-                    property.SetValue(result, collection, null);
-                    continue;
-                }
-
-                if (propertyType.IsEnumerableOfT())
-                {
-                    var argumentType = propertyType.GetGenericArguments().First();
-                    var collection = GetList(key, argumentType);
-
-                    property.SetValue(result, collection, null);
-                    continue;
-                }
-
-                var value = _settingProvider.Get(key);
-
-                if (string.IsNullOrEmpty(value)) continue;
-
-                var safeValue = ConvertValue(propertyType, value);
-
-                property.SetValue(result, safeValue, null);
+                SetMemberValue(member, result, safeValue);
             }
 
             return result;
@@ -113,14 +99,46 @@ namespace ConfigReader.ConfigReaders
             }
         }
 
-        private Array GetArray(string key, Type propertyType)
+        private void SetMemberValue(MemberInfo member, object target, object value)
+        {
+            if (member.IsField)
+            {
+                member.FieldInfo.SetValue(target, value);
+            }
+            else
+            {
+                member.PropertyInfo.SetValue(target, value, null);
+            }
+
+            Log(FullKey(member.TypeFullName, member.Name), value.ToString());
+        }
+
+        private void Log(string propertyName, string value)
+        {
+            // not exactly secure but hey
+            if (propertyName.EndsWith("password", StringComparison.OrdinalIgnoreCase))
+            {
+                value = "********";
+            }
+
+            Debug.WriteLine(string.Format("ConfigReader setting propertyName: {0} to {1}", propertyName, value), this);
+        }
+
+        private Array GetArray(string typeFullname, string fieldName, Type propertyType)
         {
             var index = 0;
             var collection = new ArrayList();
 
             while (true)
             {
-                var value = _settingProvider.Get(key + index);
+                // try fully qualified field name
+                var value = _settingProvider.Get(FullKey(typeFullname, fieldName) + index);
+
+                if (string.IsNullOrEmpty(value))
+                {
+                    // try fallback of unqualifed field name
+                    value = _settingProvider.Get(fieldName + index);
+                }
 
                 if (string.IsNullOrEmpty(value)) break;
 
@@ -132,7 +150,7 @@ namespace ConfigReader.ConfigReaders
             return collection.ToArray(propertyType);
         }
 
-        private object GetList(string key, Type propertyType)
+        private object GetList(string typeFullname, string fieldName, Type propertyType)
         {
             var index = 0;
             var listType = typeof(List<>);
@@ -141,7 +159,14 @@ namespace ConfigReader.ConfigReaders
 
             while (true)
             {
-                var value = _settingProvider.Get(key + index);
+                // try fully qualified field name
+                var value = _settingProvider.Get(FullKey(typeFullname, fieldName) + index);
+
+                if (string.IsNullOrEmpty(value))
+                {
+                    // try fallback of unqualifed field name
+                    value = _settingProvider.Get(fieldName + index);
+                }
 
                 if (string.IsNullOrEmpty(value)) break;
 
@@ -151,6 +176,21 @@ namespace ConfigReader.ConfigReaders
             }
 
             return collection;
+        }
+
+        private static string FullKey(string fullTypeName, string fieldName)
+        {
+            return string.Format("{0}.{1}", fullTypeName, fieldName);
+        }
+
+        private class MemberInfo
+        {
+            public string TypeFullName { get; set; }
+            public string Name { get; set; }
+            public Type MemberType { get; set; }
+            public bool IsField { get; set; }
+            public FieldInfo FieldInfo { get; set; }
+            public PropertyInfo PropertyInfo { get; set; }
         }
     }
 }
