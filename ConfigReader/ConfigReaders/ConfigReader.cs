@@ -42,14 +42,14 @@ namespace ConfigReader.ConfigReaders
             foreach (var member in members)
             {
                 // the key is the full namespace+type name and property
-                var fieldName = member.Name;
                 var fieldType = member.MemberType;
+                var key = member.GetFullName();
 
                 // try array
                 if (fieldType.IsArray())
                 {
                     var argumentType = fieldType.GetElementType();
-                    var collection = GetArray(typeFullName, fieldName, argumentType);
+                    var collection = GetArray(key, argumentType);
 
                     SetMemberValue(member, result, collection);
 
@@ -60,7 +60,7 @@ namespace ConfigReader.ConfigReaders
                 if (fieldType.IsEnumerableOfT())
                 {
                     var argumentType = fieldType.GetGenericArguments().First();
-                    var collection = GetList(typeFullName, fieldName, argumentType);
+                    var collection = GetList(key, argumentType);
 
                     SetMemberValue(member, result, collection);
 
@@ -68,12 +68,7 @@ namespace ConfigReader.ConfigReaders
                 }
 
                 // try a literal value
-                var value = _settingProvider.Get(FullKey(typeFullName, fieldName));
-
-                if (string.IsNullOrEmpty(value))
-                {
-                    value = _settingProvider.Get(fieldName);
-                }
+                var value = _settingProvider.Get(key);
 
                 if (string.IsNullOrEmpty(value)) continue;
 
@@ -110,7 +105,7 @@ namespace ConfigReader.ConfigReaders
                 member.PropertyInfo.SetValue(target, value, null);
             }
 
-            Log(FullKey(member.TypeFullName, member.Name), value.ToString());
+            Log(member.GetFullName(), value.ToString());
         }
 
         private void Log(string propertyName, string value)
@@ -124,21 +119,14 @@ namespace ConfigReader.ConfigReaders
             Debug.WriteLine(string.Format("ConfigReader setting propertyName: {0} to {1}", propertyName, value), this);
         }
 
-        private Array GetArray(string typeFullname, string fieldName, Type propertyType)
+        private Array GetArray(string key, Type propertyType)
         {
             var index = 0;
             var collection = new ArrayList();
 
             while (true)
             {
-                // try fully qualified field name
-                var value = _settingProvider.Get(FullKey(typeFullname, fieldName) + index);
-
-                if (string.IsNullOrEmpty(value))
-                {
-                    // try fallback of unqualifed field name
-                    value = _settingProvider.Get(fieldName + index);
-                }
+                var value = _settingProvider.Get(key + index);
 
                 if (string.IsNullOrEmpty(value)) break;
 
@@ -150,7 +138,7 @@ namespace ConfigReader.ConfigReaders
             return collection.ToArray(propertyType);
         }
 
-        private object GetList(string typeFullname, string fieldName, Type propertyType)
+        private object GetList(string key, Type propertyType)
         {
             var index = 0;
             var listType = typeof(List<>);
@@ -159,14 +147,7 @@ namespace ConfigReader.ConfigReaders
 
             while (true)
             {
-                // try fully qualified field name
-                var value = _settingProvider.Get(FullKey(typeFullname, fieldName) + index);
-
-                if (string.IsNullOrEmpty(value))
-                {
-                    // try fallback of unqualifed field name
-                    value = _settingProvider.Get(fieldName + index);
-                }
+                var value = _settingProvider.Get(key + index);
 
                 if (string.IsNullOrEmpty(value)) break;
 
@@ -178,12 +159,7 @@ namespace ConfigReader.ConfigReaders
             return collection;
         }
 
-        private static string FullKey(string fullTypeName, string fieldName)
-        {
-            return string.Format("{0}.{1}", fullTypeName, fieldName);
-        }
-
-        private class MemberInfo
+        private struct MemberInfo
         {
             public string TypeFullName { get; set; }
             public string Name { get; set; }
@@ -191,6 +167,11 @@ namespace ConfigReader.ConfigReaders
             public bool IsField { get; set; }
             public FieldInfo FieldInfo { get; set; }
             public PropertyInfo PropertyInfo { get; set; }
+
+            public string GetFullName()
+            {
+                return TypeFullName + "." + Name;
+            } 
         }
     }
 }
