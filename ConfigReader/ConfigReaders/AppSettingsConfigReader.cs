@@ -1,7 +1,7 @@
 ﻿using System;
-using ConfigReader.ValueProviders;
+using Radio7.ConfigReader.ValueProviders;
 
-namespace ConfigReader.ConfigReaders
+namespace Radio7.ConfigReader.ConfigReaders
 {
     public class AppSettingsConfigReader : IConfigReader
     {

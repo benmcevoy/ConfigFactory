@@ -1,4 +1,4 @@
-﻿namespace ConfigReader.ValueProviders
+﻿namespace Radio7.ConfigReader.ValueProviders
 {
     public interface IValueProvider
     {

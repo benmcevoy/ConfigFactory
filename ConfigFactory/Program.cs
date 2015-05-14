@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Reflection;
-using ConfigReader;
+using Radio7.ConfigReader;
 
 
 namespace ConfigFactory
@@ -9,14 +9,14 @@ namespace ConfigFactory
     {
         static void Main(string[] args)
         {
-            var test = ConfigReader.ConfigFactory.Instance.Resolve<TestConfig>();
+            var test = Radio7.ConfigReader.ConfigFactory.Instance.Resolve<TestConfig>();
 
-            var test1 = ConfigReader.ConfigFactory.Instance.Resolve<TestConfig>();
+            var test1 = Radio7.ConfigReader.ConfigFactory.Instance.Resolve<TestConfig>();
 
             //var factory = new ConfigReader.ConfigFactory(new JsonConfigReader());
             //var factory = ConfigReader.ConfigFactory.Instance;
 
-            var factory = ConfigReader.ConfigFactory.Instance;
+            var factory = Radio7.ConfigReader.ConfigFactory.Instance;
 
             factory.Register();
 

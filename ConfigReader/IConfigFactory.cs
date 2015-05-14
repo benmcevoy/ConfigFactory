@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace ConfigReader
+namespace Radio7.ConfigReader
 {
     public interface IConfigFactory
     {

@@ -1,4 +1,4 @@
-﻿using ConfigReader;
+﻿using Radio7.ConfigReader;
 
 namespace ConfigFactory
 {

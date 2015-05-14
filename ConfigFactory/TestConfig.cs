@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using ConfigReader;
+using Radio7.ConfigReader;
 
 namespace ConfigFactory
 {

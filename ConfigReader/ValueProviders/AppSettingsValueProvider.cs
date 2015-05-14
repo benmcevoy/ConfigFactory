@@ -1,6 +1,6 @@
 ﻿using System.Configuration;
 
-namespace ConfigReader.ValueProviders
+namespace Radio7.ConfigReader.ValueProviders
 {
     public class AppSettingsValueProvider : IValueProvider
     {

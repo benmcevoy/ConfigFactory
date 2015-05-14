@@ -2,7 +2,7 @@
 using System.IO;
 using System.Web.Script.Serialization;
 
-namespace ConfigReader.ConfigReaders
+namespace Radio7.ConfigReader.ConfigReaders
 {
     public class JsonConfigReader : IConfigReader
     {

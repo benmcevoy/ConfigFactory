@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using ConfigReader.ConfigReaders;
+using Radio7.ConfigReader.ConfigReaders;
 
-namespace ConfigReader
+namespace Radio7.ConfigReader
 {
     public class ConfigFactory : IConfigFactory
     {

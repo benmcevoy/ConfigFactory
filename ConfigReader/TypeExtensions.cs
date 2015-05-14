@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace ConfigReader
+namespace Radio7.ConfigReader
 {
     public static class TypeExtensions
     {

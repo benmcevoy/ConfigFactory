@@ -55,9 +55,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ConfigReader\ConfigReader.csproj">
+    <ProjectReference Include="..\ConfigReader\Radio7.ConfigReader.csproj">
       <Project>{7120431e-2995-4cda-9264-88985efd9a04}</Project>
-      <Name>ConfigReader</Name>
+      <Name>Radio7.ConfigReader</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ConfigReader.ConfigReaders
+namespace Radio7.ConfigReader.ConfigReaders
 {
     public interface IConfigReader
     {

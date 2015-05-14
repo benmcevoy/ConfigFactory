@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using ConfigReader.ValueProviders;
+using Radio7.ConfigReader.ValueProviders;
 
-namespace ConfigReader.ConfigReaders
+namespace Radio7.ConfigReader.ConfigReaders
 {
     public class ConfigReader : IConfigReader
     {
