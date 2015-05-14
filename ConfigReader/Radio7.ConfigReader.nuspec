@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>Radio7.ConfigReader</id>
+        <version>1.0.1.0</version>
+        <title>Config Reader</title>
+        <authors>Ben McEvoy</authors>
+        <projectUrl>https://github.com/benmcevoy/ConfigFactory</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>A simple factory for reading config settings by convention.  Hydrate a POCO from app settings, JSON or your own value provider.</description>
+        <summary>A simple factory for reading config settings by convention.</summary>
+    </metadata>
+    <files />
+</package>
