@@ -8,13 +8,16 @@ using Radio7.ConfigReader.ValueProviders;
 
 namespace Radio7.ConfigReader.ConfigReaders
 {
+    /// <summary>
+    /// A general config reader.
+    /// </summary>
     public class ConfigReader : IConfigReader
     {
-        private readonly IValueProvider _settingProvider;
+        private readonly IValueProvider _valueProvider;
 
-        public ConfigReader(IValueProvider settingProvider)
+        public ConfigReader(IValueProvider valueProvider)
         {
-            _settingProvider = settingProvider;
+            _valueProvider = valueProvider;
         }
 
         public T Read<T>() where T : class, new()
@@ -68,7 +71,7 @@ namespace Radio7.ConfigReader.ConfigReaders
                 }
 
                 // try a literal value
-                var value = _settingProvider.Get(key);
+                var value = _valueProvider.Get(key);
 
                 if (string.IsNullOrEmpty(value)) continue;
 
@@ -126,7 +129,7 @@ namespace Radio7.ConfigReader.ConfigReaders
 
             while (true)
             {
-                var value = _settingProvider.Get(key + index);
+                var value = _valueProvider.Get(key + index);
 
                 if (string.IsNullOrEmpty(value)) break;
 
@@ -147,7 +150,7 @@ namespace Radio7.ConfigReader.ConfigReaders
 
             while (true)
             {
-                var value = _settingProvider.Get(key + index);
+                var value = _valueProvider.Get(key + index);
 
                 if (string.IsNullOrEmpty(value)) break;
 
@@ -157,21 +160,6 @@ namespace Radio7.ConfigReader.ConfigReaders
             }
 
             return collection;
-        }
-
-        private struct MemberInfo
-        {
-            public string TypeFullName { get; set; }
-            public string Name { get; set; }
-            public Type MemberType { get; set; }
-            public bool IsField { get; set; }
-            public FieldInfo FieldInfo { get; set; }
-            public PropertyInfo PropertyInfo { get; set; }
-
-            public string GetFullName()
-            {
-                return TypeFullName + "." + Name;
-            } 
         }
     }
 }
