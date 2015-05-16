@@ -71,10 +71,46 @@ If you decorate a class either by attribute
 or by interface
 
 <pre><code>
-    [Config]
     public class TestConfig : IConfig
     {
         .....
 </code></pre>
 
-The Register() or Register(IEnumerable&lt;Assembly&gt;) will Scan, hydrate and cache the configured instances.
+The Register() or Register(IEnumerable&lt;Assembly&gt;) will Scan, hydrate and cache the configured instances.  This is useful if you wish to preload all config values on startup.
+
+The Scan() and Scan(IEnumerable&lt;Assembly&gt;) will scan for decorated instances, returning the set of decorated classes, but will not register or resolve them.  You can use this to register the classes for dependancy injection.
+
+For example, using Unity:
+
+<pre><code>
+    
+    // scan a set of assemblies
+    var configTypes = ConfigFactory.Instance.Scan(assemblies);
+    
+    // register the scanned config classes with an injection factory
+    foreach (var c in configTypes)
+    {
+        var configType = c;
+
+        unityContainer.RegisterType(configType, configType, 
+                new InjectionFactory(_ => ConfigFactory.Instance.Resolve(configType)));
+    }
+    
+</code></pre>
+
+# Configure the factory
+
+If you wish to use a specific value provider, or your own implementation, create a new instance of ConfigFactory.  For example, you could retrieve the values from a database.
+
+<pre><code>
+
+    // an implementation of IValueProvider
+    var myCustomValueProvider = new AppSettingsValueProvider();
+
+    // create an instance of the factory.  
+    var myConfigFactory = new ConfigFactory(new ConfigReader(myCustomValueProvider));
+    
+    // use the factory as normal
+    var myConfig = myConfigFactory.Resolve&lt;MyConfig&gr;();
+    
+</pre></code> 
