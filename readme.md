@@ -98,7 +98,7 @@ For example, using Unity:
     
 </code></pre>
 
-# Configure the factory
+## Configure the factory
 
 If you wish to use a specific value provider, or your own implementation, create a new instance of ConfigFactory.  For example, you could retrieve the values from a database.
 
