@@ -111,6 +111,6 @@ If you wish to use a specific value provider, or your own implementation, create
     var myConfigFactory = new ConfigFactory(new ConfigReader(myCustomValueProvider));
     
     // use the factory as normal
-    var myConfig = myConfigFactory.Resolve&lt;MyConfig&gr;();
+    var myConfig = myConfigFactory.Resolve&lt;MyConfig&gt;();
     
 </pre></code> 
