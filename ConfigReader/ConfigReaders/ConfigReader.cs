@@ -85,6 +85,13 @@ namespace Radio7.ConfigReader.ConfigReaders
 
         private static object ConvertValue(Type propertyType, string value)
         {
+            // TODO: get some respect for TypeConverters
+
+            if (propertyType.IsEnum)
+            {
+                return Enum.Parse(propertyType, value, true);
+            }
+
             switch (propertyType.Name)
             {
                 case "DateTime":
