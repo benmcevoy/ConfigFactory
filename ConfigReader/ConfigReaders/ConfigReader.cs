@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -52,7 +53,7 @@ namespace Radio7.ConfigReader.ConfigReaders
                 if (fieldType.IsArray())
                 {
                     var argumentType = fieldType.GetElementType();
-                    var collection = GetArray(key, argumentType);
+                    var collection = GetArray(key, argumentType, member);
 
                     SetMemberValue(member, result, collection);
 
@@ -63,7 +64,7 @@ namespace Radio7.ConfigReader.ConfigReaders
                 if (fieldType.IsEnumerableOfT())
                 {
                     var argumentType = fieldType.GetGenericArguments().First();
-                    var collection = GetList(key, argumentType);
+                    var collection = GetList(key, argumentType, member);
 
                     SetMemberValue(member, result, collection);
 
@@ -75,7 +76,7 @@ namespace Radio7.ConfigReader.ConfigReaders
 
                 if (string.IsNullOrEmpty(value)) continue;
 
-                var safeValue = ConvertValue(fieldType, value);
+                var safeValue = ConvertValue(fieldType, value, GetTypeConverter(member));
 
                 SetMemberValue(member, result, safeValue);
             }
@@ -83,28 +84,29 @@ namespace Radio7.ConfigReader.ConfigReaders
             return result;
         }
 
-        private static object ConvertValue(Type propertyType, string value)
+        private static TypeConverter GetTypeConverter(MemberInfo member)
         {
-            // TODO: get some respect for TypeConverters
+            var typeConverterAttribute = member.IsField
+                ? member.FieldInfo.GetCustomAttributes(true).OfType<TypeConverterAttribute>().FirstOrDefault()
+                : member.PropertyInfo.GetCustomAttributes(true).OfType<TypeConverterAttribute>().FirstOrDefault();
 
-            if (propertyType.IsEnum)
-            {
-                return Enum.Parse(propertyType, value, true);
-            }
+            if (typeConverterAttribute == null) return null;
 
-            switch (propertyType.Name)
-            {
-                case "DateTime":
-                    DateTime dateValue;
-                    DateTime.TryParse(value, out dateValue);
-                    return dateValue;
+            var converterType = Type.GetType(typeConverterAttribute.ConverterTypeName);
 
-                default:
-                    return Convert.ChangeType(value, propertyType);
-            }
+            if (converterType == null) return null;
+
+            return (TypeConverter)Activator.CreateInstance(converterType);
         }
 
-        private void SetMemberValue(MemberInfo member, object target, object value)
+        private static object ConvertValue(Type propertyType, string value, TypeConverter typeConverter = null)
+        {
+            if (typeConverter == null) typeConverter = TypeDescriptor.GetConverter(propertyType);
+
+            return typeConverter.ConvertFromInvariantString(value);
+        }
+
+        private static void SetMemberValue(MemberInfo member, object target, object value)
         {
             if (member.IsField)
             {
@@ -118,7 +120,7 @@ namespace Radio7.ConfigReader.ConfigReaders
             Log(member.GetFullName(), value.ToString());
         }
 
-        private void Log(string propertyName, string value)
+        private static void Log(string propertyName, string value)
         {
             // not exactly secure but hey
             if (propertyName.EndsWith("password", StringComparison.OrdinalIgnoreCase))
@@ -126,10 +128,10 @@ namespace Radio7.ConfigReader.ConfigReaders
                 value = "********";
             }
 
-            Debug.WriteLine(string.Format("ConfigReader setting propertyName: {0} to {1}", propertyName, value), this);
+            Trace.WriteLine(string.Format("ConfigReader setting propertyName: {0} to {1}", propertyName, value));
         }
 
-        private Array GetArray(string key, Type propertyType)
+        private Array GetArray(string key, Type propertyType, MemberInfo member)
         {
             var index = 0;
             var collection = new ArrayList();
@@ -140,7 +142,7 @@ namespace Radio7.ConfigReader.ConfigReaders
 
                 if (string.IsNullOrEmpty(value)) break;
 
-                collection.Add(ConvertValue(propertyType, value));
+                collection.Add(ConvertValue(propertyType, value, GetTypeConverter(member)));
 
                 index++;
             }
@@ -148,7 +150,7 @@ namespace Radio7.ConfigReader.ConfigReaders
             return collection.ToArray(propertyType);
         }
 
-        private object GetList(string key, Type propertyType)
+        private object GetList(string key, Type propertyType, MemberInfo member)
         {
             var index = 0;
             var listType = typeof(List<>);
@@ -161,7 +163,7 @@ namespace Radio7.ConfigReader.ConfigReaders
 
                 if (string.IsNullOrEmpty(value)) break;
 
-                collection.Add(ConvertValue(propertyType, value));
+                collection.Add(ConvertValue(propertyType, value, GetTypeConverter(member)));
 
                 index++;
             }
