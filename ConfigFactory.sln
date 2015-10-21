@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConfigFactory", "ConfigFactory\ConfigFactory.csproj", "{A242AB03-1034-4BBD-895A-C26247FA5A9E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radio7.ConfigReader", "ConfigReader\Radio7.ConfigReader.csproj", "{7120431E-2995-4CDA-9264-88985EFD9A04}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Radio7.ConfigReader.Tests", "Radio7.COnfigReader.Tests\Radio7.ConfigReader.Tests.csproj", "{FA19951E-A9EA-4061-B5B4-38207D3FF39F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{7120431E-2995-4CDA-9264-88985EFD9A04}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7120431E-2995-4CDA-9264-88985EFD9A04}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7120431E-2995-4CDA-9264-88985EFD9A04}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FA19951E-A9EA-4061-B5B4-38207D3FF39F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA19951E-A9EA-4061-B5B4-38207D3FF39F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA19951E-A9EA-4061-B5B4-38207D3FF39F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA19951E-A9EA-4061-B5B4-38207D3FF39F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
