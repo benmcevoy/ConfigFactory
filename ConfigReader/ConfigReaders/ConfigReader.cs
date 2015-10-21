@@ -49,6 +49,9 @@ namespace Radio7.ConfigReader.ConfigReaders
                 var fieldType = member.MemberType;
                 var key = member.GetFullName();
 
+                // if the type is just "object" we do not know how to set it
+                if (fieldType.FullName == "System.Object") continue;
+
                 // try array
                 if (fieldType.IsArray())
                 {
@@ -76,9 +79,11 @@ namespace Radio7.ConfigReader.ConfigReaders
 
                 if (string.IsNullOrEmpty(value)) continue;
 
-                var safeValue = ConvertValue(fieldType, value, GetTypeConverter(member));
+                var convertedValue = ConvertValue(fieldType, value, GetTypeConverter(member));
 
-                SetMemberValue(member, result, safeValue);
+                if (convertedValue == null) continue;
+
+                SetMemberValue(member, result, convertedValue);
             }
 
             return result;
@@ -103,7 +108,14 @@ namespace Radio7.ConfigReader.ConfigReaders
         {
             if (typeConverter == null) typeConverter = TypeDescriptor.GetConverter(propertyType);
 
-            return typeConverter.ConvertFromInvariantString(value);
+            try
+            {
+                return typeConverter.ConvertFromInvariantString(value);
+            }
+            catch (NotSupportedException)
+            {
+                return null;
+            }
         }
 
         private static void SetMemberValue(MemberInfo member, object target, object value)

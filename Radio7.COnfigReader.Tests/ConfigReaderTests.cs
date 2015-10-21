@@ -43,8 +43,8 @@ namespace Radio7.ConfigReader.Tests
             Assert.Equal(sut.MyDouble, -123.45);
             Assert.Equal(sut.MyChar, '1');
             Assert.Equal(sut.MyBool, true);
-            // object is always going to be a string
-            Assert.Equal(sut.MyObject, "MyObject_configured");
+            // object is not supported as there is no type converter
+            Assert.Equal(sut.MyObject, null);
             Assert.Equal(sut.MyString, "MyString_configured");
             Assert.Equal(sut.MyDecimal, -123.45m);
         }
