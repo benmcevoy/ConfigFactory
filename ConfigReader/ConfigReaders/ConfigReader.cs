@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -8,13 +9,16 @@ using Radio7.ConfigReader.ValueProviders;
 
 namespace Radio7.ConfigReader.ConfigReaders
 {
+    /// <summary>
+    /// A general config reader.
+    /// </summary>
     public class ConfigReader : IConfigReader
     {
-        private readonly IValueProvider _settingProvider;
+        private readonly IValueProvider _valueProvider;
 
-        public ConfigReader(IValueProvider settingProvider)
+        public ConfigReader(IValueProvider valueProvider)
         {
-            _settingProvider = settingProvider;
+            _valueProvider = valueProvider;
         }
 
         public T Read<T>() where T : class, new()
@@ -49,7 +53,7 @@ namespace Radio7.ConfigReader.ConfigReaders
                 if (fieldType.IsArray())
                 {
                     var argumentType = fieldType.GetElementType();
-                    var collection = GetArray(key, argumentType);
+                    var collection = GetArray(key, argumentType, member);
 
                     SetMemberValue(member, result, collection);
 
@@ -60,7 +64,7 @@ namespace Radio7.ConfigReader.ConfigReaders
                 if (fieldType.IsEnumerableOfT())
                 {
                     var argumentType = fieldType.GetGenericArguments().First();
-                    var collection = GetList(key, argumentType);
+                    var collection = GetList(key, argumentType, member);
 
                     SetMemberValue(member, result, collection);
 
@@ -68,11 +72,11 @@ namespace Radio7.ConfigReader.ConfigReaders
                 }
 
                 // try a literal value
-                var value = _settingProvider.Get(key);
+                var value = _valueProvider.Get(key);
 
                 if (string.IsNullOrEmpty(value)) continue;
 
-                var safeValue = ConvertValue(fieldType, value);
+                var safeValue = ConvertValue(fieldType, value, GetTypeConverter(member));
 
                 SetMemberValue(member, result, safeValue);
             }
@@ -80,21 +84,29 @@ namespace Radio7.ConfigReader.ConfigReaders
             return result;
         }
 
-        private static object ConvertValue(Type propertyType, string value)
+        private static TypeConverter GetTypeConverter(MemberInfo member)
         {
-            switch (propertyType.Name)
-            {
-                case "DateTime":
-                    DateTime dateValue;
-                    DateTime.TryParse(value, out dateValue);
-                    return dateValue;
+            var typeConverterAttribute = member.IsField
+                ? member.FieldInfo.GetCustomAttributes(true).OfType<TypeConverterAttribute>().FirstOrDefault()
+                : member.PropertyInfo.GetCustomAttributes(true).OfType<TypeConverterAttribute>().FirstOrDefault();
 
-                default:
-                    return Convert.ChangeType(value, propertyType);
-            }
+            if (typeConverterAttribute == null) return null;
+
+            var converterType = Type.GetType(typeConverterAttribute.ConverterTypeName);
+
+            if (converterType == null) return null;
+
+            return (TypeConverter)Activator.CreateInstance(converterType);
         }
 
-        private void SetMemberValue(MemberInfo member, object target, object value)
+        private static object ConvertValue(Type propertyType, string value, TypeConverter typeConverter = null)
+        {
+            if (typeConverter == null) typeConverter = TypeDescriptor.GetConverter(propertyType);
+
+            return typeConverter.ConvertFromInvariantString(value);
+        }
+
+        private static void SetMemberValue(MemberInfo member, object target, object value)
         {
             if (member.IsField)
             {
@@ -108,7 +120,7 @@ namespace Radio7.ConfigReader.ConfigReaders
             Log(member.GetFullName(), value.ToString());
         }
 
-        private void Log(string propertyName, string value)
+        private static void Log(string propertyName, string value)
         {
             // not exactly secure but hey
             if (propertyName.EndsWith("password", StringComparison.OrdinalIgnoreCase))
@@ -116,21 +128,21 @@ namespace Radio7.ConfigReader.ConfigReaders
                 value = "********";
             }
 
-            Debug.WriteLine(string.Format("ConfigReader setting propertyName: {0} to {1}", propertyName, value), this);
+            Trace.WriteLine(string.Format("ConfigReader setting propertyName: {0} to {1}", propertyName, value));
         }
 
-        private Array GetArray(string key, Type propertyType)
+        private Array GetArray(string key, Type propertyType, MemberInfo member)
         {
             var index = 0;
             var collection = new ArrayList();
 
             while (true)
             {
-                var value = _settingProvider.Get(key + index);
+                var value = _valueProvider.Get(key + index);
 
                 if (string.IsNullOrEmpty(value)) break;
 
-                collection.Add(ConvertValue(propertyType, value));
+                collection.Add(ConvertValue(propertyType, value, GetTypeConverter(member)));
 
                 index++;
             }
@@ -138,7 +150,7 @@ namespace Radio7.ConfigReader.ConfigReaders
             return collection.ToArray(propertyType);
         }
 
-        private object GetList(string key, Type propertyType)
+        private object GetList(string key, Type propertyType, MemberInfo member)
         {
             var index = 0;
             var listType = typeof(List<>);
@@ -147,31 +159,16 @@ namespace Radio7.ConfigReader.ConfigReaders
 
             while (true)
             {
-                var value = _settingProvider.Get(key + index);
+                var value = _valueProvider.Get(key + index);
 
                 if (string.IsNullOrEmpty(value)) break;
 
-                collection.Add(ConvertValue(propertyType, value));
+                collection.Add(ConvertValue(propertyType, value, GetTypeConverter(member)));
 
                 index++;
             }
 
             return collection;
-        }
-
-        private struct MemberInfo
-        {
-            public string TypeFullName { get; set; }
-            public string Name { get; set; }
-            public Type MemberType { get; set; }
-            public bool IsField { get; set; }
-            public FieldInfo FieldInfo { get; set; }
-            public PropertyInfo PropertyInfo { get; set; }
-
-            public string GetFullName()
-            {
-                return TypeFullName + "." + Name;
-            } 
         }
     }
 }

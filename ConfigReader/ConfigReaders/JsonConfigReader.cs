@@ -31,11 +31,10 @@ namespace Radio7.ConfigReader.ConfigReaders
 
             var path = GetPath(name);
 
-            if (File.Exists(path))
-            {
-                var file = File.ReadAllText(path);
-                result = Serializer.Deserialize(file, type);
-            }
+            if (!File.Exists(path)) return result;
+
+            var file = File.ReadAllText(path);
+            result = Serializer.Deserialize(file, type);
 
             return result;
         }
