@@ -13,9 +13,9 @@ namespace Radio7.ConfigReader.Tests
         // supports property
         // supports fields
         // cannot set private
+        // supports enumerables
 
-        // mock the value provider
-
+        // TODO: convert to [Theory] instead of multiple asserts
         [Fact]
         public void Can_Convert_To_Type()
         {
@@ -49,6 +49,7 @@ namespace Radio7.ConfigReader.Tests
             Assert.Equal(sut.MyDecimal, -123.45m);
         }
 
+        // TODO: convert to [Theory] instead of multiple asserts
         [Fact]
         public void Factory_Preserves_Defaults()
         {
@@ -94,6 +95,9 @@ namespace Radio7.ConfigReader.Tests
             // assert
             Assert.Equal(sut.MySetterIsPrivate, null);
         }
+
+        // TODO: typeconverter
+        // TODO: enum
     }
 }
 
