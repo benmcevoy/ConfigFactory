@@ -24,6 +24,7 @@ namespace Radio7.ConfigReader
         /// Register any classes in the AppDomain that implement IConfig or are decorated with the Config attribute.
         /// Registration hydrates and caches the instances.
         /// </summary>
+        [Obsolete("Scanning AppDomain can include alien libraries and unexpected side effects.")]
         void Register();
 
         /// <summary>
@@ -47,6 +48,7 @@ namespace Radio7.ConfigReader
         /// <summary>
         /// Scan for any Types in the AppDomain that implement IConfig or are decorated with the Config attribute.
         /// </summary>
+        [Obsolete("Scanning AppDomain can include alien libraries and unexpected side effects.")]
         IEnumerable<Type> Scan();
 
         /// <summary>

@@ -9,7 +9,7 @@ namespace Radio7.ConfigReader.Tests
         // preserves defaults
         // can find IConfig
         // can find Attribute
-        // respects type converter, hang on i haven't implemented this yet, it's on develop
+        // respects type converter
         // supports property
         // supports fields
         // cannot set private
