@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 
 namespace Radio7.ConfigReader.Tests
 {
@@ -37,6 +38,14 @@ namespace Radio7.ConfigReader.Tests
         private string MyFieldIsPrivate;
 
         public MyEnum MyEnum;
+
+        [TypeConverter(typeof(MyValueConverter))]
+        public MySubConfigPoco MySubConfigPoco;
+    }
+
+    internal class MySubConfigPoco
+    {
+        public string Prop1 { get; set; }public string Prop2 { get; set; }
     }
 
     internal enum MyEnum

@@ -29,6 +29,8 @@ namespace Radio7.ConfigReader.Tests
             { "Radio7.ConfigReader.Tests.MyConfigPoco.MyDecimal", "-123.45" },
             { "Radio7.ConfigReader.Tests.MyConfigPoco.MySetterIsPrivate", "MySetterIsPrivate_configured" },
             { "Radio7.ConfigReader.Tests.MyConfigPoco.MyFieldIsPrivate", "MyFieldIsPrivate_configured" },
+            { "Radio7.ConfigReader.Tests.MyConfigPoco.MyEnum", "Value2" },
+            { "Radio7.ConfigReader.Tests.MyConfigPoco.MySubConfigPoco", "prop1 configured|prop2 configured" },
         };
 
         public string Get(string key)
