@@ -41,9 +41,17 @@ namespace Radio7.ConfigReader.Tests
 
         [TypeConverter(typeof(MyValueConverter))]
         public MySubConfigPoco MySubConfigPoco;
+
+        public MyOtherSubConfigPoco MyOtherSubConfigPoco { get; set; }
     }
 
     internal class MySubConfigPoco
+    {
+        public string Prop1 { get; set; }public string Prop2 { get; set; }
+    }
+
+    [TypeConverter(typeof(MyTypeConverter))]
+    internal class MyOtherSubConfigPoco
     {
         public string Prop1 { get; set; }public string Prop2 { get; set; }
     }

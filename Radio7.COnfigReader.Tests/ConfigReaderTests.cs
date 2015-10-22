@@ -170,6 +170,20 @@ namespace Radio7.ConfigReader.Tests
             Assert.Equal("prop1 configured", sut.MySubConfigPoco.Prop1);
             Assert.Equal("prop2 configured", sut.MySubConfigPoco.Prop2);
         }
+
+        [Fact]
+        public void TypeConverter_IsRespected_On_Type()
+        {
+            // arrange
+            var factory = new ConfigFactory(new ConfigReaders.ConfigReader(new MockValueProvider()));
+
+            // act
+            var sut = factory.Resolve<MyConfigPoco>();
+
+            // assert
+            Assert.Equal("prop1 configured", sut.MyOtherSubConfigPoco.Prop1);
+            Assert.Equal("prop2 configured", sut.MyOtherSubConfigPoco.Prop2);
+        }
     }
 }
 
