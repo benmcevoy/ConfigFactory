@@ -41,25 +41,27 @@ namespace Radio7.ConfigReader.ConfigReaders
                 if (TrySetObject(fieldType)) continue;
                 if (TrySetArray(fieldType, key, member, result)) continue;
                 if (TrySetEnumerable(fieldType, key, member, result)) continue;
-
+                
                 TrySetValue(key, fieldType, member, result);
             }
 
             return result;
         }
 
-        private void TrySetValue(string key, Type fieldType, MemberInfo member, object result)
+        private bool TrySetValue(string key, Type fieldType, MemberInfo member, object result)
         {
             // try a literal value
             var value = _valueProvider.Get(key);
 
-            if (string.IsNullOrEmpty(value)) return;
+            if (string.IsNullOrEmpty(value)) return false;
 
             var convertedValue = ConvertValue(fieldType, value, GetTypeConverter(member));
 
-            if (convertedValue == null) return;
+            if (convertedValue == null) return false;
 
             SetMemberValue(member, result, convertedValue);
+
+            return true;
         }
 
         private bool TrySetEnumerable(Type fieldType, string key, MemberInfo member, object result)
@@ -95,7 +97,7 @@ namespace Radio7.ConfigReader.ConfigReaders
         }
 
         // I thought about allowing this to be virtual or a KeyProvider injected
-        // to allow the key name ocnvention to configurable
+        // to allow the key name convention to configurable
         // maybe in the future
         private static string GetKey(MemberInfo member)
         {
