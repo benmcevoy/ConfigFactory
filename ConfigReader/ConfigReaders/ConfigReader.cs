@@ -28,65 +28,114 @@ namespace Radio7.ConfigReader.ConfigReaders
 
         public object Read(Type type)
         {
-            var typeFullName = type.FullName;
             var result = Activator.CreateInstance(type);
-
-            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public)
-                .Where(info => !info.IsInitOnly)
-                .Select(info => new MemberInfo { Name = info.Name, MemberType = info.FieldType, IsField = true, FieldInfo = info, TypeFullName = typeFullName });
-
-            var properties =
-                type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                    .Where(info => info.GetSetMethod() != null)
-                    .Select(info => new MemberInfo { Name = info.Name, MemberType = info.PropertyType, PropertyInfo = info, TypeFullName = typeFullName });
-
-            var members = fields.Union(properties);
+            var members = GetMembers(type);
 
             // try and set fields
             foreach (var member in members)
             {
                 // the key is the full namespace+type name and property
                 var fieldType = member.MemberType;
-                var key = member.GetFullName();
+                var key = GetKey(member);
 
-                // if the type is just "object" we do not know how to set it
-                if (fieldType.FullName == "System.Object") continue;
+                if (TrySetObject(fieldType)) continue;
+                if (TrySetArray(fieldType, key, member, result)) continue;
+                if (TrySetEnumerable(fieldType, key, member, result)) continue;
 
-                // try array
-                if (fieldType.IsArray())
-                {
-                    var argumentType = fieldType.GetElementType();
-                    var collection = GetArray(key, argumentType, member);
-
-                    SetMemberValue(member, result, collection);
-
-                    continue;
-                }
-
-                // try enumerable
-                if (fieldType.IsEnumerableOfT())
-                {
-                    var argumentType = fieldType.GetGenericArguments().First();
-                    var collection = GetList(key, argumentType, member);
-
-                    SetMemberValue(member, result, collection);
-
-                    continue;
-                }
-
-                // try a literal value
-                var value = _valueProvider.Get(key);
-
-                if (string.IsNullOrEmpty(value)) continue;
-
-                var convertedValue = ConvertValue(fieldType, value, GetTypeConverter(member));
-
-                if (convertedValue == null) continue;
-
-                SetMemberValue(member, result, convertedValue);
+                TrySetValue(key, fieldType, member, result);
             }
 
             return result;
+        }
+
+        private void TrySetValue(string key, Type fieldType, MemberInfo member, object result)
+        {
+            // try a literal value
+            var value = _valueProvider.Get(key);
+
+            if (string.IsNullOrEmpty(value)) return;
+
+            var convertedValue = ConvertValue(fieldType, value, GetTypeConverter(member));
+
+            if (convertedValue == null) return;
+
+            SetMemberValue(member, result, convertedValue);
+        }
+
+        private bool TrySetEnumerable(Type fieldType, string key, MemberInfo member, object result)
+        {
+            // try enumerable
+            if (!fieldType.IsEnumerableOfT()) return false;
+
+            var argumentType = fieldType.GetGenericArguments().First();
+            var collection = GetList(key, argumentType, member);
+
+            SetMemberValue(member, result, collection);
+
+            return true;
+        }
+
+        private static bool TrySetObject(Type fieldType)
+        {
+            // if the type is just "object" we do not know how to set it
+            return fieldType.FullName == "System.Object";
+        }
+
+        private bool TrySetArray(Type fieldType, string key, MemberInfo member, object result)
+        {
+            // try array
+            if (!fieldType.IsArray()) return false;
+
+            var argumentType = fieldType.GetElementType();
+            var collection = GetArray(key, argumentType, member);
+
+            SetMemberValue(member, result, collection);
+
+            return true;
+        }
+
+        // I thought about allowing this to be virtual or a KeyProvider injected
+        // to allow the key name ocnvention to configurable
+        // maybe in the future
+        private static string GetKey(MemberInfo member)
+        {
+            // use the full type and member name
+            return member.GetFullName();
+        }
+
+        private static IEnumerable<MemberInfo> GetMembers(Type type)
+        {
+            var typeFullName = type.FullName;
+
+            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public)
+                .Where(info => !info.IsInitOnly)
+                .Select(
+                    info =>
+                        new MemberInfo
+                        {
+                            Name = info.Name,
+                            MemberType = info.FieldType,
+                            IsField = true,
+                            FieldInfo = info,
+                            TypeFullName = typeFullName
+                        });
+
+            var properties =
+                type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                    .Where(info => info.GetSetMethod() != null)
+                    .Select(
+                        info =>
+                            new MemberInfo
+                            {
+                                Name = info.Name,
+                                MemberType = info.PropertyType,
+                                PropertyInfo = info,
+                                TypeFullName = typeFullName
+                            });
+
+            var members = fields.Union(properties);
+
+            return members;
         }
 
         private static TypeConverter GetTypeConverter(MemberInfo member)
