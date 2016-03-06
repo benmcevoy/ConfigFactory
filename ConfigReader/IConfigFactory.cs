@@ -21,32 +21,34 @@ namespace Radio7.ConfigReader
         object Resolve(Type type);
 
         /// <summary>
-        /// Scan for any classes in the AppDomain that implement IConfig or are decorated with the Config attribute
-        /// and hydrate and cache them.
+        /// Register any classes in the AppDomain that implement IConfig or are decorated with the Config attribute.
+        /// Registration hydrates and caches the instances.
         /// </summary>
+        [Obsolete("Scanning AppDomain can include alien libraries and unexpected side effects.")]
         void Register();
 
         /// <summary>
-        /// Scan for any classes in the set of assemblies that implement IConfig or are decorated with the Config attribute
-        /// and hydrate and cache them.
+        /// Register any classes in the set of assemblies that implement IConfig or are decorated with the Config attribute
+        /// Registration hydrates and caches the instances.
         /// </summary>
         void Register(IEnumerable<Assembly> assemblies);
 
         /// <summary>
-        /// Scan for any classes in the set of assemblies that implement IConfig or are decorated with the Config attribute
-        /// and hydrate and cache them.
+        /// Register any classes in the set of types that implement IConfig or are decorated with the Config attribute.
+        /// Registration hydrates and caches the instances.
         /// </summary>
         void Register(IEnumerable<Type> types);
 
         /// <summary>
-        /// Get all previously Scanned or Resolved registrations.
+        /// Get all registrations.
         /// </summary>
         /// <returns></returns>
         IEnumerable<KeyValuePair<Type, object>> GetAllRegistrations();
 
         /// <summary>
-        /// Scan for any Types in the set of assemblies that implement IConfig or are decorated with the Config attribute.
+        /// Scan for any Types in the AppDomain that implement IConfig or are decorated with the Config attribute.
         /// </summary>
+        [Obsolete("Scanning AppDomain can include alien libraries and unexpected side effects.")]
         IEnumerable<Type> Scan();
 
         /// <summary>

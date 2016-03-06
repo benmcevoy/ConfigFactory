@@ -30,6 +30,7 @@ namespace ConfigFactory
             var test2 = factory.Resolve<TestConfig>();
             var test3 = factory.Resolve<TestFieldConfig>();
             var test4 = factory.Resolve<TestAttributeConfig>();
+            
 
 
             foreach (var value in test2.MyCollection)
@@ -40,6 +41,8 @@ namespace ConfigFactory
             Console.WriteLine(test2.MyString);
             Console.WriteLine(test2.MyOtherString);
             Console.WriteLine(test2.MyDate);
+            Console.WriteLine(test2.DateTimeConverted);
+            Console.WriteLine(test2.MyEnum);
 
             Console.WriteLine(test3.MyString);
             Console.WriteLine(test3.MyOtherString);
@@ -84,3 +87,4 @@ namespace ConfigFactory
         }
     }
 }
+

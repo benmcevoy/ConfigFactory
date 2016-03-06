@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -8,13 +9,16 @@ using Radio7.ConfigReader.ValueProviders;
 
 namespace Radio7.ConfigReader.ConfigReaders
 {
+    /// <summary>
+    /// A general config reader.
+    /// </summary>
     public class ConfigReader : IConfigReader
     {
-        private readonly IValueProvider _settingProvider;
+        private readonly IValueProvider _valueProvider;
 
-        public ConfigReader(IValueProvider settingProvider)
+        public ConfigReader(IValueProvider valueProvider)
         {
-            _settingProvider = settingProvider;
+            _valueProvider = valueProvider;
         }
 
         public T Read<T>() where T : class, new()
@@ -24,78 +28,151 @@ namespace Radio7.ConfigReader.ConfigReaders
 
         public object Read(Type type)
         {
-            var typeFullName = type.FullName;
             var result = Activator.CreateInstance(type);
-
-            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public)
-                .Where(info => !info.IsInitOnly)
-                .Select(info => new MemberInfo { Name = info.Name, MemberType = info.FieldType, IsField = true, FieldInfo = info, TypeFullName = typeFullName });
-
-            var properties =
-                type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-                    .Where(info => info.GetSetMethod() != null)
-                    .Select(info => new MemberInfo { Name = info.Name, MemberType = info.PropertyType, PropertyInfo = info, TypeFullName = typeFullName });
-
-            var members = fields.Union(properties);
+            var members = GetMembers(type);
 
             // try and set fields
             foreach (var member in members)
             {
                 // the key is the full namespace+type name and property
                 var fieldType = member.MemberType;
-                var key = member.GetFullName();
+                var key = GetKey(member);
 
-                // try array
-                if (fieldType.IsArray())
-                {
-                    var argumentType = fieldType.GetElementType();
-                    var collection = GetArray(key, argumentType);
+                if (TrySetObject(fieldType)) continue;
+                if (TrySetArray(fieldType, key, member, result)) continue;
+                if (TrySetEnumerable(fieldType, key, member, result)) continue;
 
-                    SetMemberValue(member, result, collection);
-
-                    continue;
-                }
-
-                // try enumerable
-                if (fieldType.IsEnumerableOfT())
-                {
-                    var argumentType = fieldType.GetGenericArguments().First();
-                    var collection = GetList(key, argumentType);
-
-                    SetMemberValue(member, result, collection);
-
-                    continue;
-                }
-
-                // try a literal value
-                var value = _settingProvider.Get(key);
-
-                if (string.IsNullOrEmpty(value)) continue;
-
-                var safeValue = ConvertValue(fieldType, value);
-
-                SetMemberValue(member, result, safeValue);
+                TrySetValue(key, fieldType, member, result);
             }
 
             return result;
         }
 
-        private static object ConvertValue(Type propertyType, string value)
+        private bool TrySetValue(string key, Type fieldType, MemberInfo member, object result)
         {
-            switch (propertyType.Name)
-            {
-                case "DateTime":
-                    DateTime dateValue;
-                    DateTime.TryParse(value, out dateValue);
-                    return dateValue;
+            // try a literal value
+            var value = _valueProvider.Get(key);
 
-                default:
-                    return Convert.ChangeType(value, propertyType);
+            if (string.IsNullOrEmpty(value)) return false;
+
+            var convertedValue = ConvertValue(fieldType, value, GetTypeConverter(member));
+
+            if (convertedValue == null) return false;
+
+            SetMemberValue(member, result, convertedValue);
+
+            return true;
+        }
+
+        private bool TrySetEnumerable(Type fieldType, string key, MemberInfo member, object result)
+        {
+            // try enumerable
+            if (!fieldType.IsEnumerableOfT()) return false;
+
+            var argumentType = fieldType.GetGenericArguments().First();
+            var collection = GetList(key, argumentType, member);
+
+            SetMemberValue(member, result, collection);
+
+            return true;
+        }
+
+        private static bool TrySetObject(Type fieldType)
+        {
+            // if the type is just "object" we do not know how to set it
+            return fieldType.FullName == "System.Object";
+        }
+
+        private bool TrySetArray(Type fieldType, string key, MemberInfo member, object result)
+        {
+            // try array
+            if (!fieldType.IsArray()) return false;
+
+            var argumentType = fieldType.GetElementType();
+            var collection = GetArray(key, argumentType, member);
+
+            SetMemberValue(member, result, collection);
+
+            return true;
+        }
+
+        // I thought about allowing this to be virtual or a KeyProvider injected
+        // to allow the key name convention to configurable
+        // maybe in the future
+        private static string GetKey(MemberInfo member)
+        {
+            // use the full type and member name
+            return member.GetFullName();
+        }
+
+        private static IEnumerable<MemberInfo> GetMembers(Type type)
+        {
+            var typeFullName = type.FullName;
+
+            var fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public)
+                .Where(info => !info.IsInitOnly)
+                .Select(
+                    info =>
+                        new MemberInfo
+                        {
+                            Name = info.Name,
+                            MemberType = info.FieldType,
+                            IsField = true,
+                            FieldInfo = info,
+                            TypeFullName = typeFullName
+                        });
+
+            var properties =
+                type.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                    .Where(info => info.GetSetMethod() != null)
+                    .Select(
+                        info =>
+                            new MemberInfo
+                            {
+                                Name = info.Name,
+                                MemberType = info.PropertyType,
+                                PropertyInfo = info,
+                                TypeFullName = typeFullName
+                            });
+
+            var members = fields.Union(properties);
+
+            return members;
+        }
+
+        private static TypeConverter GetTypeConverter(MemberInfo member)
+        {
+            var typeConverterAttribute = member.IsField
+                ? member.FieldInfo.GetCustomAttributes(true).OfType<TypeConverterAttribute>().FirstOrDefault()
+                : member.PropertyInfo.GetCustomAttributes(true).OfType<TypeConverterAttribute>().FirstOrDefault();
+
+            if (typeConverterAttribute == null) return null;
+
+            var converterType = Type.GetType(typeConverterAttribute.ConverterTypeName);
+
+            if (converterType == null) return null;
+
+            return (TypeConverter)Activator.CreateInstance(converterType);
+        }
+
+        private static object ConvertValue(Type propertyType, string value, TypeConverter typeConverter = null)
+        {
+            if (typeConverter == null) typeConverter = TypeDescriptor.GetConverter(propertyType);
+
+            try
+            {
+                return typeConverter.ConvertFromInvariantString(value);
+            }
+            catch (NotSupportedException)
+            {
+                return null;
             }
         }
 
-        private void SetMemberValue(MemberInfo member, object target, object value)
+        private static void SetMemberValue(MemberInfo member, object target, object value)
         {
+            if (value == null) return;
+
             if (member.IsField)
             {
                 member.FieldInfo.SetValue(target, value);
@@ -108,7 +185,7 @@ namespace Radio7.ConfigReader.ConfigReaders
             Log(member.GetFullName(), value.ToString());
         }
 
-        private void Log(string propertyName, string value)
+        private static void Log(string propertyName, string value)
         {
             // not exactly secure but hey
             if (propertyName.EndsWith("password", StringComparison.OrdinalIgnoreCase))
@@ -116,62 +193,54 @@ namespace Radio7.ConfigReader.ConfigReaders
                 value = "********";
             }
 
-            Debug.WriteLine(string.Format("ConfigReader setting propertyName: {0} to {1}", propertyName, value), this);
+            Trace.WriteLine(string.Format("ConfigReader setting propertyName: {0} to {1}", propertyName, value));
         }
 
-        private Array GetArray(string key, Type propertyType)
+        private Array GetArray(string key, Type propertyType, MemberInfo member)
         {
             var index = 0;
-            var collection = new ArrayList();
+            ArrayList collection = null;
 
             while (true)
             {
-                var value = _settingProvider.Get(key + index);
+                var value = _valueProvider.Get(key + index);
 
                 if (string.IsNullOrEmpty(value)) break;
+                
+                if (collection == null) collection = new ArrayList();
 
-                collection.Add(ConvertValue(propertyType, value));
+                collection.Add(ConvertValue(propertyType, value, GetTypeConverter(member)));
 
                 index++;
             }
 
-            return collection.ToArray(propertyType);
+            return collection == null
+                ? null
+                : collection.ToArray(propertyType);
         }
 
-        private object GetList(string key, Type propertyType)
+        private IList GetList(string key, Type propertyType, MemberInfo member)
         {
             var index = 0;
             var listType = typeof(List<>);
             var concreteType = listType.MakeGenericType(propertyType);
-            var collection = (IList)Activator.CreateInstance(concreteType);
+
+            IList collection = null;
 
             while (true)
             {
-                var value = _settingProvider.Get(key + index);
+                var value = _valueProvider.Get(key + index);
 
                 if (string.IsNullOrEmpty(value)) break;
 
-                collection.Add(ConvertValue(propertyType, value));
+                if (collection == null) collection = (IList)Activator.CreateInstance(concreteType);
+
+                collection.Add(ConvertValue(propertyType, value, GetTypeConverter(member)));
 
                 index++;
             }
 
             return collection;
-        }
-
-        private struct MemberInfo
-        {
-            public string TypeFullName { get; set; }
-            public string Name { get; set; }
-            public Type MemberType { get; set; }
-            public bool IsField { get; set; }
-            public FieldInfo FieldInfo { get; set; }
-            public PropertyInfo PropertyInfo { get; set; }
-
-            public string GetFullName()
-            {
-                return TypeFullName + "." + Name;
-            } 
         }
     }
 }

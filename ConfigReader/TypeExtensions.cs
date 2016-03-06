@@ -21,7 +21,6 @@ namespace Radio7.ConfigReader
 
         public static IEnumerable<Type> GetLoadableTypes(this Assembly assembly)
         {
-            // TODO: Argument validation
             try
             {
                 return assembly.GetTypes();

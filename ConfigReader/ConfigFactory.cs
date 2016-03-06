@@ -9,7 +9,7 @@ namespace Radio7.ConfigReader
     public class ConfigFactory : IConfigFactory
     {
         private readonly IConfigReader _configReader;
-        private readonly Dictionary<Type, object> _cache = new Dictionary<Type, object>(8);
+        private readonly Dictionary<Type, object> _cache = new Dictionary<Type, object>(32);
 
         public ConfigFactory()
             : this(new AppSettingsConfigReader())
