@@ -41,7 +41,7 @@ namespace Radio7.ConfigReader.ConfigReaders
                 if (TrySetObject(fieldType)) continue;
                 if (TrySetArray(fieldType, key, member, result)) continue;
                 if (TrySetEnumerable(fieldType, key, member, result)) continue;
-                
+
                 TrySetValue(key, fieldType, member, result);
             }
 
@@ -171,6 +171,8 @@ namespace Radio7.ConfigReader.ConfigReaders
 
         private static void SetMemberValue(MemberInfo member, object target, object value)
         {
+            if (value == null) return;
+
             if (member.IsField)
             {
                 member.FieldInfo.SetValue(target, value);
@@ -197,34 +199,41 @@ namespace Radio7.ConfigReader.ConfigReaders
         private Array GetArray(string key, Type propertyType, MemberInfo member)
         {
             var index = 0;
-            var collection = new ArrayList();
+            ArrayList collection = null;
 
             while (true)
             {
                 var value = _valueProvider.Get(key + index);
 
                 if (string.IsNullOrEmpty(value)) break;
+                
+                if (collection == null) collection = new ArrayList();
 
                 collection.Add(ConvertValue(propertyType, value, GetTypeConverter(member)));
 
                 index++;
             }
 
-            return collection.ToArray(propertyType);
+            return collection == null
+                ? null
+                : collection.ToArray(propertyType);
         }
 
-        private object GetList(string key, Type propertyType, MemberInfo member)
+        private IList GetList(string key, Type propertyType, MemberInfo member)
         {
             var index = 0;
             var listType = typeof(List<>);
             var concreteType = listType.MakeGenericType(propertyType);
-            var collection = (IList)Activator.CreateInstance(concreteType);
+
+            IList collection = null;
 
             while (true)
             {
                 var value = _valueProvider.Get(key + index);
 
                 if (string.IsNullOrEmpty(value)) break;
+
+                if (collection == null) collection = (IList)Activator.CreateInstance(concreteType);
 
                 collection.Add(ConvertValue(propertyType, value, GetTypeConverter(member)));
 

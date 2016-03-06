@@ -32,6 +32,13 @@ namespace Radio7.ConfigReader.Tests
             { "Radio7.ConfigReader.Tests.MyConfigPoco.MyEnum", "Value2" },
             { "Radio7.ConfigReader.Tests.MyConfigPoco.MySubConfigPoco", "prop1 configured|prop2 configured" },
             { "Radio7.ConfigReader.Tests.MyConfigPoco.MyOtherSubConfigPoco", "prop1 configured|prop2 configured" },
+
+            { "Radio7.ConfigReader.Tests.MyArrayPoco.MyUnSetArray0", "setValue1" },
+            { "Radio7.ConfigReader.Tests.MyArrayPoco.MyUnSetArray1", "setValue2" },
+
+            { "Radio7.ConfigReader.Tests.MyArrayPoco.MySetArray0", "setValue1" },
+            { "Radio7.ConfigReader.Tests.MyArrayPoco.MySetArray1", "setValue2" },
+
         };
 
         public string Get(string key)
